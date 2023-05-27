@@ -1,13 +1,11 @@
 import math.Mat4x4;
 import math.Vec3;
+import math.Vec4;
 import mesh.Mesh;
 import mesh.Terrain;
-import renderer.Camera;
-import renderer.ShadowMapInfo;
-import renderer.ShadowRenderer;
+import renderer.*;
 import renderer.framebuffer.ColorBuffer;
 import renderer.framebuffer.DepthBuffer;
-import renderer.Renderer;
 import util.Display;
 import util.STLLoader;
 
@@ -49,31 +47,43 @@ public class Main {
         shadowRenderer.setDepthBuffer(shadowBuffer);
         shadowRenderer.setCamera(lightCamera);
 
+        VertexShader waterVS = (view, transform, proj, vertex, color) -> {
+            VertexShaderOutput vso = new VertexShaderOutput();
+            vso.color = color;
+            vso.vertex = new Vec3(vertex).mul(1, Math.sin(System.nanoTime() / 1_000_000_000.0 + vertex.x + vertex.z)*0.3f, 1);
+            vso.preProjection = new Mat4x4(view).mul(transform).mul(new Vec4(vso.vertex, 1.0)).getV3();
+            vso.projection = proj.mul(new Vec4(vso.preProjection, 1.0)).project();
+
+            return vso;
+        };
+
         double[] x = new double[1];
         x[0] = 0;
         new Display(cb, () -> {
             x[0] += 0.02f;
             shadowRenderer.clear();
                 shadowRenderer.setTransformation(mat4x4);
+                VertexShader vs = shadowRenderer.getVs();
+                shadowRenderer.setVs(waterVS);
                 shadowRenderer.render(mesh);
-               // monkeyTrans.identity()
-              //          .rotateX(x[0])
-              //          .rotateY(x[0])
-              //          .translate(new Vec3(5, -1.5, 5));
-             //   shadowRenderer.setTransformation(monkeyTrans);
-             //   shadowRenderer.render(monkey);
+                monkeyTrans.identity()
+                        .rotateX(x[0])
+                        .rotateY(x[0])
+                        .translate(new Vec3(5, -1.5, 5));
+                shadowRenderer.setTransformation(monkeyTrans);
+                shadowRenderer.setVs(vs);
+                shadowRenderer.render(monkey);
 
             renderer.addFragmentShaderUniform("shadowMap", shadowBuffer);
             renderer.addFragmentShaderUniform("lightMatrix", lightCamera.getTransform());
             renderer.clear();
                 renderer.setTransformation(mat4x4);
+                vs = renderer.getVs();
+                renderer.setVs(waterVS);
                 renderer.render(mesh);
-              //  monkeyTrans.identity()
-             //           .rotateX(x[0])
-             //           .rotateY(x[0])
-             //           .translate(new Vec3(5, -1.5, 5));
-             //   renderer.setTransformation(monkeyTrans);
-             //   renderer.render(monkey);
+                renderer.setTransformation(monkeyTrans);
+                renderer.setVs(vs);
+                renderer.render(monkey);
         }, 1280, 720);
     }
 }

@@ -55,6 +55,14 @@ public class Renderer {
         this.vs = vs;
     }
 
+    public VertexShader getVs() {
+        return vs;
+    }
+
+    public FragmentShader getFs() {
+        return fs;
+    }
+
     public Renderer() {
         this.wireframe = true;
     }
@@ -68,7 +76,7 @@ public class Renderer {
     private VertexShader vs = (view, transform, proj, vertex, color) -> {
       VertexShaderOutput vso = new VertexShaderOutput();
       vso.color = color;
-      vso.vertex = new Vec3(vertex).mul(1, Math.sin(System.nanoTime() / 1_000_000_000.0 + vertex.x + vertex.z)*0.3f, 1);
+      vso.vertex = vertex;
       vso.preProjection = new Mat4x4(view).mul(transform).mul(new Vec4(vso.vertex, 1.0)).getV3();
       vso.projection = projection.mul(new Vec4(vso.preProjection, 1.0)).project();
 
